@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /cart.html
+Disallow: /checkout.html
+Disallow: /404.html
+
+Sitemap: https://lexstore.by/sitemap.xml
