@@ -38,12 +38,18 @@
 
   toggle.addEventListener("click", function () {
     var isOpen = panel.classList.contains("is-open");
-    if (isOpen) close(); else open();
+    if (isOpen) close();
+    else {
+      if (window.LEXSTORE_CLOSE_MOBILE_NAV) window.LEXSTORE_CLOSE_MOBILE_NAV();
+      open();
+    }
   });
 
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && panel.classList.contains("is-open")) close();
   });
+
+  window.LEXSTORE_CLOSE_SEARCH = close;
 
   // pre-fill from ?q= so the box reflects an active search after landing on catalog.html
   var existingQuery = new URLSearchParams(window.location.search).get("q");
@@ -59,6 +65,44 @@
       window.location.href = "catalog.html" + (q ? "?q=" + encodeURIComponent(q) : "");
     }
   });
+})();
+
+/* ---------- header: mobile nav drawer (burger) ---------- */
+(function mobileNav() {
+  var toggle = document.querySelector("[data-menu-toggle]");
+  var panel = document.querySelector("[data-mobile-nav]");
+  if (!toggle || !panel) return;
+
+  function open() {
+    panel.hidden = false;
+    requestAnimationFrame(function () { panel.classList.add("is-open"); });
+    toggle.setAttribute("aria-expanded", "true");
+  }
+
+  function close() {
+    panel.classList.remove("is-open");
+    toggle.setAttribute("aria-expanded", "false");
+    window.setTimeout(function () { panel.hidden = true; }, 420);
+  }
+
+  toggle.addEventListener("click", function () {
+    var isOpen = panel.classList.contains("is-open");
+    if (isOpen) close();
+    else {
+      if (window.LEXSTORE_CLOSE_SEARCH) window.LEXSTORE_CLOSE_SEARCH();
+      open();
+    }
+  });
+
+  panel.addEventListener("click", function (e) {
+    if (e.target.closest("a")) close();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && panel.classList.contains("is-open")) close();
+  });
+
+  window.LEXSTORE_CLOSE_MOBILE_NAV = close;
 })();
 
 /* ---------- cart: items + quantities, persisted in localStorage ----------

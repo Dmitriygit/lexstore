@@ -270,6 +270,55 @@ p {
 
 .site-actions .btn { padding: 0 20px; min-height: 38px; font-size: 14px; }
 
+/* burger — hidden on desktop, shown once .site-nav collapses on mobile */
+.menu-toggle { display: none; }
+.menu-toggle__close { display: none; }
+.menu-toggle[aria-expanded="true"] .menu-toggle__bars { display: none; }
+.menu-toggle[aria-expanded="true"] .menu-toggle__close { display: block; }
+
+/* mobile nav drawer — same collapse mechanic as the search panel, so the
+   two never fight for the same visual language */
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 39;
+  overflow: hidden;
+  max-height: 0;
+  background: var(--bg-soft);
+  border-bottom: 1px solid transparent;
+  transition: max-height 420ms var(--ease), border-color 420ms var(--ease);
+}
+.mobile-nav.is-open { max-height: 480px; border-bottom-color: var(--line); }
+
+.mobile-nav__inner {
+  display: flex;
+  flex-direction: column;
+  padding: 84px 0 var(--sp-2);
+}
+
+.mobile-nav__inner a {
+  padding: 13px var(--side);
+  font-size: 17px;
+  color: var(--ink-70);
+  transition: color 320ms var(--ease), background 320ms var(--ease);
+}
+.mobile-nav__inner a:hover { color: var(--ink); background: var(--bg-soft-2); }
+.mobile-nav__inner a.is-active { color: var(--ink); }
+
+.mobile-nav__phone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: var(--sp-1) var(--side) var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  color: var(--ink-70);
+}
+.mobile-nav__phone svg { width: 16px; height: 16px; flex: none; }
+
 /* search panel — collapses under the header, expands on toggle */
 .search-panel {
   position: fixed;
@@ -1202,16 +1251,25 @@ p {
 }
 
 @media (max-width: 560px) {
-  .site-nav a:not(.is-active) { display: none; }
+  .site-nav { display: none; }
+  .menu-toggle { display: flex; }
   .site-actions__phone { display: none; }
-  .site-actions .btn__label { display: none; }
-  .site-actions .btn { width: 38px; height: 38px; min-height: 38px; padding: 0; }
-  .site-actions .btn__arrow { transform: none !important; margin: 0; }
+  .site-actions > .btn { display: none; }
   .cat-grid { grid-template-columns: 1fr; }
-  .hero__meta { flex-direction: column; align-items: flex-start; margin-top: var(--sp-6); }
+  .hero__meta { flex-direction: column; align-items: flex-start; margin-top: var(--sp-4); }
   .hero { padding: 96px 0 var(--sp-5); }
-  .hero__stage { width: clamp(100px, 26vw, 130px); transform: translate(-30%, 4%); }
-  .hero__headings { gap: clamp(32px, 7vh, 56px); }
+  /* the cascade used to overlap the headline via absolute positioning —
+     fragile at narrow widths no matter how the transform was tuned. In
+     flow it can never sit on top of text again, full stop. */
+  .hero__stage {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    width: clamp(150px, 46vw, 210px);
+    margin: 4px auto 0;
+  }
+  .hero__headings { gap: clamp(20px, 4vh, 32px); }
   .hits-grid { grid-template-columns: 1fr; }
   .related-grid { grid-template-columns: 1fr; }
   .filters { flex-direction: column; align-items: stretch; }
