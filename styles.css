@@ -55,6 +55,11 @@ body {
   font-family: var(--font-body);
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
+  /* headings routinely join words with &nbsp; to keep short phrases from
+     orphaning — fine until a whole run has no breakable space left and a
+     narrow screen has nowhere to wrap it; this is the safety net so that
+     forces a break rather than pushing the page wider than the viewport */
+  overflow-wrap: break-word;
   /* overflow-x alone would silently compute overflow-y to `auto`, turning
      body into its own scroll container and breaking position:sticky (the
      hero pin) against the real viewport — pin overflow-y explicitly. */
@@ -952,8 +957,14 @@ p {
 .product-card {
   position: relative;
   display: block;
+  min-width: 0; /* grid items refuse to shrink below their content's
+    min-content width by default — the price+button footer alone wants
+    more room than a narrow mobile column has, which was quietly forcing
+    the whole grid (and page) wider than the viewport */
   transition: transform 420ms var(--ease);
 }
+
+.product-card__footer { flex-wrap: wrap; }
 
 .product-card:hover { transform: translateY(-5px); }
 
@@ -1284,11 +1295,23 @@ p {
     overflow-x: auto;
     scrollbar-width: none;
     padding-bottom: 2px;
+    /* fades the last visible chip instead of cutting it off mid-word, so
+       the row reads as "scroll for more" rather than looking clipped */
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
   }
   .filters__row::-webkit-scrollbar { display: none; }
   .filters__row .chip { flex: none; }
   .catalog-toolbar { justify-content: flex-start; }
   .sort-field select { width: 100%; }
+
+  /* centered eyebrow + heading reads calmer on a narrow column than
+     text that starts flush left and trails off short of the right edge */
+  .catalog-head,
+  .page-head { text-align: center; }
+  .catalog-head [data-breadcrumbs] .breadcrumbs ol,
+  .page-head .breadcrumbs ol { justify-content: center; }
+  .page-head__lead { margin-left: auto; margin-right: auto; text-align: left; }
 }
 
 @media (max-width: 480px) {
