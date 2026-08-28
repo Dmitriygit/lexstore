@@ -117,13 +117,17 @@
             </label>
             <label class="radio-option">
               <input type="radio" name="delivery" value="delivery">
-              Доставка
+              Доставка по Бресту
+            </label>
+            <label class="radio-option radio-option--soon">
+              <input type="radio" name="delivery" value="delivery-rb" disabled>
+              Доставка по РБ <span class="radio-option__badge">скоро</span>
             </label>
           </div>
         </div>
 
         <div class="form-field" data-address-field hidden>
-          <label for="f-address">Адрес доставки</label>
+          <label for="f-address">Адрес доставки по Бресту</label>
           <textarea id="f-address" name="address" rows="2"></textarea>
           <span class="form-field__error"></span>
         </div>

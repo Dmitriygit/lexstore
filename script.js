@@ -947,7 +947,7 @@ function checkoutPageModule() {
     lines.push("Заказ Lexstore");
     lines.push("Имя: " + name);
     lines.push("Телефон: " + phone);
-    lines.push("Получение: " + (isDelivery ? "Доставка — " + (address ? address.value.trim() : "") : "Самовывоз"));
+    lines.push("Получение: " + (isDelivery ? "Доставка по Бресту — " + (address ? address.value.trim() : "") : "Самовывоз"));
     lines.push("");
     lines.push("Товары:");
     items.forEach(function (it) {

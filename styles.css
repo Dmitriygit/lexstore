@@ -1677,6 +1677,18 @@ p {
 .radio-option.is-checked { box-shadow: inset 0 0 0 1px var(--ink); color: var(--ink); }
 .radio-option input { accent-color: var(--accent); }
 
+.radio-option--soon { cursor: not-allowed; opacity: .55; }
+.radio-option--soon input { cursor: not-allowed; }
+.radio-option__badge {
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg-soft-2);
+  color: var(--ink-55);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .checkout-summary ul { list-style: none; margin: 0 0 var(--sp-2); padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .checkout-summary li { display: flex; justify-content: space-between; gap: var(--sp-2); font-size: 13px; color: var(--ink-70); }
 
