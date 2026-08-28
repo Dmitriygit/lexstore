@@ -863,6 +863,20 @@ p {
 .site-footer__contacts a { color: var(--ink-70); transition: color 320ms var(--ease); }
 .site-footer__contacts a:hover { color: var(--ink); }
 
+.site-footer__socials {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: 10px;
+}
+.site-footer__socials a {
+  display: flex;
+  color: var(--ink-55);
+  transition: color 320ms var(--ease);
+}
+.site-footer__socials a:hover { color: var(--ink); }
+.site-footer__socials svg { width: 18px; height: 18px; }
+
 .site-footer__legal {
   margin-top: var(--sp-3);
   padding-top: var(--sp-3);
