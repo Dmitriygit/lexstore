@@ -223,6 +223,7 @@
         '<td>' + o.total + '&nbsp;Br.</td>' +
         '<td>' + (o.comment ? esc(o.comment) : "—") + '</td>' +
         '<td><select data-order-status>' + statusOptions + '</select></td>' +
+        '<td><button type="button" class="admin-btn-danger" data-delete-order>Удалить</button></td>' +
       '</tr>'
     );
   }
@@ -245,6 +246,18 @@
     var id = row.getAttribute("data-id");
     supa.from("orders").update({ status: select.value }).eq("id", id).then(function (res) {
       if (res.error) alert("Не удалось обновить статус: " + res.error.message);
+    });
+  });
+
+  ordersBody.addEventListener("click", function (e) {
+    var delBtn = e.target.closest("[data-delete-order]");
+    if (!delBtn) return;
+    var row = delBtn.closest("[data-order-row]");
+    var id = row.getAttribute("data-id");
+    if (!confirm("Удалить этот заказ? Это нельзя отменить.")) return;
+    supa.from("orders").delete().eq("id", id).then(function (res) {
+      if (res.error) alert("Не удалось удалить: " + res.error.message);
+      else row.remove();
     });
   });
 
