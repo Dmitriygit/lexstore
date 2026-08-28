@@ -3,5 +3,6 @@ Allow: /
 Disallow: /cart.html
 Disallow: /checkout.html
 Disallow: /404.html
+Disallow: /admin.html
 
 Sitemap: https://lexstore.by/sitemap.xml

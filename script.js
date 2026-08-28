@@ -106,10 +106,9 @@
 })();
 
 /* ---------- cart: items + quantities, persisted in localStorage ----------
-   Frontend-only, so there's no payment processing behind this — but it's a
-   real cart: add, change quantity, remove, and the total survives a reload.
-   Order handoff (checkout.html) opens a pre-filled email, since there's no
-   server yet to receive it any other way. */
+   The cart itself is still local to the browser (add/remove/qty, survives a
+   reload) — only the catalog data and the final order now go through the
+   database; nothing here needed to change for that. */
 (function cart() {
   var KEY = "lexstore_cart_items";
 
@@ -298,12 +297,13 @@
 // A static, slightly-fanned stack with a CSS hover keeps some life in the
 // hero without costing that height back.
 
-/* ---------- catalog: data, render, filter ---------- */
-// product photography is being reshot — cards render a placeholder frame
-// (no `img`) until real photos are ready to drop back in per product.
-// `inStock` reflects what's confirmed on hand today; flip it to `false`
-// the moment something actually sells out.
-var LEXSTORE_PRODUCTS = [
+/* ---------- catalog: shared data + helpers ---------- */
+// `LEXSTORE_PRODUCTS` now loads from Supabase (see loadProducts() below) so
+// price/stock/new-product changes go live without a redeploy. The array
+// below is only the offline fallback — used if the database is unreachable
+// — kept in sync with what's in the `products` table by hand.
+var LEXSTORE_PRODUCTS = [];
+var LEXSTORE_FALLBACK_PRODUCTS = [
   { id: "airpods-pro-2", name: "Наушники AirPods Pro 2 + чехол в подарок", price: 65, oldPrice: 75, cat: "headphones", inStock: true },
   { id: "airpods-pro-3", name: "Наушники AirPods Pro 3 + чехол в подарок", price: 75, oldPrice: 85, cat: "headphones", inStock: true },
   { id: "airpods-4", name: "Наушники AirPods 4 + чехол в подарок", price: 70, oldPrice: 80, cat: "headphones", inStock: true },
@@ -320,6 +320,34 @@ var LEXSTORE_PRODUCTS = [
   { id: "dualshock-4", name: "DualShock 4 для PS4", price: 40, oldPrice: null, cat: "gaming", inStock: true },
   { id: "smart-glasses", name: "Smart Glasses с камерой", price: 200, oldPrice: 220, cat: "smart", inStock: true }
 ];
+
+function loadProducts() {
+  if (!window.LEXSTORE_SUPABASE) return Promise.resolve(LEXSTORE_FALLBACK_PRODUCTS.slice());
+  return window.LEXSTORE_SUPABASE
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .then(function (res) {
+      if (res.error || !res.data || !res.data.length) {
+        if (res.error) console.error("Products load failed, using offline list:", res.error.message);
+        return LEXSTORE_FALLBACK_PRODUCTS.slice();
+      }
+      return res.data.map(function (row) {
+        return {
+          id: row.id,
+          name: row.name,
+          price: Number(row.price),
+          oldPrice: row.old_price === null || row.old_price === undefined ? null : Number(row.old_price),
+          cat: row.cat,
+          inStock: row.in_stock !== false
+        };
+      });
+    })
+    .catch(function (err) {
+      console.error("Products load threw, using offline list:", err);
+      return LEXSTORE_FALLBACK_PRODUCTS.slice();
+    });
+}
 
 var LEXSTORE_CATEGORIES = [
   { slug: "headphones", name: "Беспроводные наушники",
@@ -411,7 +439,10 @@ function bindLazyImage(img) {
 }
 window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
 
-(function catalog() {
+/* ---------- everything below needs LEXSTORE_PRODUCTS, so it only runs
+   once loadProducts() resolves (see the bottom of this file) ---------- */
+
+function catalogPageModule() {
   var grid = document.querySelector("[data-product-grid]");
   var chipsRow = document.querySelector("[data-filters]");
   var filtersBar = chipsRow ? chipsRow.closest(".filters") : null;
@@ -537,10 +568,16 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
   var initialQuery = new URLSearchParams(window.location.search).get("q");
   if (initialQuery) applySearch(initialQuery);
   else render();
-})();
 
-/* ---------- homepage: hero card cascade (static, hover fans it out) ---------- */
-(function heroCascade() {
+  // catalog.html: pick up a #hash category once the chips actually exist
+  var hash = window.location.hash.replace("#", "");
+  if (hash) {
+    var hashChip = document.querySelector('.chip[data-cat="' + hash + '"]');
+    if (hashChip) hashChip.click();
+  }
+}
+
+function heroCascadeModule() {
   var stage = document.querySelector("[data-hero-cascade]");
   if (!stage) return;
   var picks = ["watch-s10", "flip-7", "dualshock-4"];
@@ -558,10 +595,9 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
       '</div>'
     );
   }).join("");
-})();
+}
 
-/* ---------- homepage: category tiles from shared data ---------- */
-(function homeCategories() {
+function homeCategoriesModule() {
   var grid = document.querySelector("[data-category-grid]");
   if (!grid) return;
   var counts = {};
@@ -587,10 +623,9 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
       '</a>'
     );
   }).join("");
-})();
+}
 
-/* ---------- homepage: "hits" grid, reusing the shared card template ---------- */
-(function homeHits() {
+function homeHitsModule() {
   var grid = document.querySelector("[data-hits-grid]");
   if (!grid) return;
   var ids = ["airpods-pro-3", "watch-s10", "flip-7", "smart-glasses"];
@@ -600,20 +635,9 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
 
   grid.innerHTML = picks.map(function (p, i) { return productCardHTML(p, Math.min(i, 8) * 50); }).join("");
   if (window.LEXSTORE_WISHLIST) window.LEXSTORE_WISHLIST.paint();
-})();
+}
 
-/* ---------- catalog.html: pick up #hash category on load ---------- */
-(function hashFilter() {
-  var hash = window.location.hash.replace("#", "");
-  if (!hash) return;
-  window.addEventListener("DOMContentLoaded", function () {
-    var chip = document.querySelector('.chip[data-cat="' + hash + '"]');
-    if (chip) chip.click();
-  });
-})();
-
-/* ---------- product.html: single product page ---------- */
-(function productPage() {
+function productPageModule() {
   var root = document.querySelector("[data-product-detail]");
   var notFound = document.querySelector("[data-product-not-found]");
   if (!root && !notFound) return;
@@ -642,7 +666,7 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
 
   document.title = p.name + " — Lexstore";
   var descMeta = document.querySelector('meta[name="description"]');
-  if (descMeta) descMeta.setAttribute("content", p.name + " — купить в Lexstore за " + p.price + " Br.");
+  if (descMeta) descMeta.setAttribute("content", p.name + " — купить в Lexstore за " + p.price + " Br.");
   var ogTitle = document.querySelector('meta[property="og:title"]');
   if (ogTitle) ogTitle.setAttribute("content", p.name + " — Lexstore");
   var ogDesc = document.querySelector('meta[property="og:description"]');
@@ -665,11 +689,11 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
   if (nameEl) nameEl.textContent = p.name;
 
   var priceNow = root.querySelector("[data-product-price-now]");
-  if (priceNow) priceNow.textContent = p.price + " Br.";
+  if (priceNow) priceNow.textContent = p.price + " Br.";
 
   var priceOld = root.querySelector("[data-product-price-old]");
   if (priceOld) {
-    if (p.oldPrice) { priceOld.textContent = p.oldPrice + " Br."; priceOld.hidden = false; }
+    if (p.oldPrice) { priceOld.textContent = p.oldPrice + " Br."; priceOld.hidden = false; }
     else priceOld.hidden = true;
   }
 
@@ -711,10 +735,9 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
   }
 
   if (window.LEXSTORE_WISHLIST) window.LEXSTORE_WISHLIST.paint();
-})();
+}
 
-/* ---------- cart.html: item list, quantities, undo on remove ---------- */
-(function cartPage() {
+function cartPageModule() {
   var listEl = document.querySelector("[data-cart-list]");
   if (!listEl) return;
 
@@ -829,14 +852,14 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
   }
 
   render();
-})();
+}
 
-/* ---------- checkout.html: form validation + mailto handoff ----------
-   There's no backend to receive an order yet, so submitting builds a
-   pre-filled email to the shop's address and also shows the raw order text
-   so it can be copied and sent another way (a mail client won't always be
-   configured on the device). Nothing here claims a payment was taken. */
-(function checkoutPage() {
+/* ---------- checkout.html: form validation + real order + mailto backup ----------
+   Submitting now inserts the order straight into the `orders` table (visible
+   in admin.html) and, either way, still opens a pre-filled email and shows
+   the raw order text — a mail client isn't always configured on the device,
+   and this keeps a paper trail even if the database write ever fails. */
+function checkoutPageModule() {
   var form = document.querySelector("[data-checkout-form]");
   if (!form) return;
 
@@ -940,15 +963,7 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
     return lines.join("\n");
   }
 
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    if (!validate()) {
-      var firstInvalid = form.querySelector(".is-invalid input, .is-invalid textarea");
-      if (firstInvalid) firstInvalid.focus();
-      return;
-    }
-
-    var text = buildOrderText();
+  function finishSubmit(text) {
     var mailto = "mailto:elb00304@g.bstu.by" +
       "?subject=" + encodeURIComponent("Новый заказ — Lexstore") +
       "&body=" + encodeURIComponent(text);
@@ -959,6 +974,48 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
       successEl.hidden = false;
       var box = successEl.querySelector("[data-order-text]");
       if (box) box.value = text;
+    }
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!validate()) {
+      var firstInvalid = form.querySelector(".is-invalid input, .is-invalid textarea");
+      if (firstInvalid) firstInvalid.focus();
+      return;
+    }
+
+    var text = buildOrderText();
+    var name = form.querySelector('[name="name"]').value.trim();
+    var phone = form.querySelector('[name="phone"]').value.trim();
+    var delivery = form.querySelector('input[name="delivery"]:checked');
+    var isDelivery = delivery && delivery.value === "delivery";
+    var address = form.querySelector('[name="address"]');
+    var comment = form.querySelector('[name="comment"]');
+
+    if (window.LEXSTORE_SUPABASE) {
+      var orderItems = items.map(function (it) {
+        var p = byId[it.id];
+        return { id: it.id, name: p ? p.name : it.id, qty: it.qty, price: p ? p.price : 0 };
+      });
+      window.LEXSTORE_SUPABASE.from("orders").insert({
+        name: name,
+        phone: phone,
+        delivery_type: isDelivery ? "delivery" : "pickup",
+        address: isDelivery && address ? address.value.trim() : null,
+        comment: comment && comment.value.trim() ? comment.value.trim() : null,
+        items: orderItems,
+        total: subtotal,
+        status: "new"
+      }).then(function (res) {
+        if (res.error) console.error("Order insert failed:", res.error.message);
+        finishSubmit(text);
+      }).catch(function (err) {
+        console.error("Order insert threw:", err);
+        finishSubmit(text);
+      });
+    } else {
+      finishSubmit(text);
     }
   });
 
@@ -989,10 +1046,9 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
       if (label) label.textContent = "Корзина очищена";
     });
   }
-})();
+}
 
-/* ---------- wishlist.html ---------- */
-(function wishlistPage() {
+function wishlistPageModule() {
   var grid = document.querySelector("[data-wishlist-grid]");
   if (!grid) return;
   var emptyEl = document.querySelector("[data-wishlist-empty]");
@@ -1018,4 +1074,16 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
   });
 
   render();
-})();
+}
+
+loadProducts().then(function (products) {
+  LEXSTORE_PRODUCTS = products;
+  catalogPageModule();
+  heroCascadeModule();
+  homeCategoriesModule();
+  homeHitsModule();
+  productPageModule();
+  cartPageModule();
+  checkoutPageModule();
+  wishlistPageModule();
+});
