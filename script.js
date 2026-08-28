@@ -593,7 +593,7 @@ window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
 (function homeHits() {
   var grid = document.querySelector("[data-hits-grid]");
   if (!grid) return;
-  var ids = ["airpods-pro-3", "airpods-max-2", "watch-s10", "flip-7", "powerbank-hoco", "adapter-usb-c", "dualshock-4", "smart-glasses"];
+  var ids = ["airpods-pro-3", "watch-s10", "flip-7", "smart-glasses"];
   var byId = {};
   LEXSTORE_PRODUCTS.forEach(function (p) { byId[p.id] = p; });
   var picks = ids.map(function (id) { return byId[id]; }).filter(Boolean);

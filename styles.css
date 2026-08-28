@@ -334,7 +334,11 @@ p {
 }
 
 .search-panel.is-open {
-  max-height: 88px;
+  /* the row inside needs 84px of top offset (to clear the fixed header)
+     plus its own ~44px height plus bottom padding — 88px was clipping the
+     input/button almost entirely, so a tap on "Найти" landed on whatever
+     was actually painted there instead (the header behind it) */
+  max-height: 172px;
   border-bottom-color: var(--line);
 }
 
@@ -556,7 +560,7 @@ p {
      "которой" */
   transform: translate(-38%, -22%);
   z-index: 2;
-  width: clamp(140px, 14vw, 190px);
+  width: clamp(190px, 19vw, 270px);
   aspect-ratio: 1 / 1;
 }
 
@@ -601,7 +605,9 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
-  margin-top: var(--sp-4);
+  /* enough air that the CTA reads as its own row, not something crowded
+     under the (large, muted) second headline sitting right above it */
+  margin-top: var(--sp-7);
 }
 
 .hero__sub {
@@ -892,16 +898,10 @@ p {
   position: sticky;
   top: 76px;
   z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
   background: rgba(26, 27, 30, .86);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   padding: var(--sp-2) 0;
-  margin-bottom: var(--sp-3);
   border-bottom: 1px solid var(--line);
 }
 
@@ -909,8 +909,12 @@ p {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-1);
-  flex: 1;
-  min-width: 0;
+}
+
+.catalog-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--sp-2) 0;
 }
 
 .search-status {
@@ -1272,7 +1276,18 @@ p {
   .hero__headings { gap: clamp(20px, 4vh, 32px); }
   .hits-grid { grid-template-columns: 1fr; }
   .related-grid { grid-template-columns: 1fr; }
-  .filters { flex-direction: column; align-items: stretch; }
+  /* the sticky chip bar used to wrap onto 4-5 rows here and, being
+     sticky, pin that much of the screen for the whole scroll — one
+     slim scrollable row fixes it regardless of how many categories exist */
+  .filters__row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .filters__row::-webkit-scrollbar { display: none; }
+  .filters__row .chip { flex: none; }
+  .catalog-toolbar { justify-content: flex-start; }
   .sort-field select { width: 100%; }
 }
 
