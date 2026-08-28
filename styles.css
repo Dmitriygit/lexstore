@@ -1189,6 +1189,15 @@ p {
 .contact-card dd a { color: inherit; transition: color 320ms var(--ease); }
 .contact-card dd a:hover { color: var(--accent); }
 
+.contact-card__socials {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.contact-card__socials a { color: var(--ink-70); transition: color 320ms var(--ease); }
+.contact-card__socials a:hover { color: var(--accent); }
+.contact-card__socials svg { width: 19px; height: 19px; }
+
 .contacts-legal {
   margin-top: var(--sp-4);
   font-size: 12px;
