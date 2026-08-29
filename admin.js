@@ -52,6 +52,18 @@
     }).join("");
   }
 
+  // Uploads one product photo to the "product-images" storage bucket and
+  // resolves with its public URL. Resolves with null if no file was given.
+  function uploadProductImage(id, file) {
+    if (!file) return Promise.resolve(null);
+    var ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    var path = id + "-" + Date.now() + "." + ext;
+    return supa.storage.from("product-images").upload(path, file, { upsert: true, cacheControl: "3600" }).then(function (res) {
+      if (res.error) throw res.error;
+      return supa.storage.from("product-images").getPublicUrl(path).data.publicUrl;
+    });
+  }
+
   /* ---------- auth ---------- */
   function showApp() {
     loginSection.hidden = true;
@@ -115,13 +127,18 @@
   if (addCatSelect) addCatSelect.innerHTML = categoryOptionsHTML();
 
   function productRowHTML(p) {
+    var thumb = p.image_url
+      ? '<img class="admin-thumb" src="' + esc(p.image_url) + '" alt="">'
+      : '<span class="admin-thumb admin-thumb--empty">нет фото</span>';
     return (
       '<tr data-product-row data-id="' + esc(p.id) + '">' +
         '<td class="admin-table__id">' + esc(p.id) + '</td>' +
+        '<td><div class="admin-thumb-cell">' + thumb + '<input type="file" accept="image/*" data-field="image-file"></div></td>' +
         '<td><input type="text" data-field="name" value="' + esc(p.name) + '"></td>' +
         '<td><select data-field="cat">' + categoryOptionsHTML(p.cat) + '</select></td>' +
         '<td><input type="number" data-field="price" value="' + p.price + '" min="0" step="1"></td>' +
         '<td><input type="number" data-field="old_price" value="' + (p.old_price === null || p.old_price === undefined ? "" : p.old_price) + '" min="0" step="1" placeholder="—"></td>' +
+        '<td><textarea data-field="description" rows="2" placeholder="Описание">' + esc(p.description || "") + '</textarea></td>' +
         '<td class="admin-table__center"><input type="checkbox" data-field="in_stock"' + (p.in_stock ? " checked" : "") + '></td>' +
         '<td class="admin-table__actions">' +
           '<button type="button" class="btn btn--outline admin-btn-sm" data-save-product>' +
@@ -155,19 +172,31 @@
         cat: row.querySelector('[data-field="cat"]').value,
         price: Number(row.querySelector('[data-field="price"]').value) || 0,
         old_price: row.querySelector('[data-field="old_price"]').value === "" ? null : Number(row.querySelector('[data-field="old_price"]').value),
+        description: row.querySelector('[data-field="description"]').value.trim() || null,
         in_stock: row.querySelector('[data-field="in_stock"]').checked
       };
+      var fileInput = row.querySelector('[data-field="image-file"]');
+      var file = fileInput && fileInput.files[0];
       saveBtn.disabled = true;
-      supa.from("products").update(patch).eq("id", id).then(function (res) {
+      (file ? uploadProductImage(id, file) : Promise.resolve(null)).then(function (imageUrl) {
+        if (imageUrl) patch.image_url = imageUrl;
+        return supa.from("products").update(patch).eq("id", id);
+      }).then(function (res) {
         saveBtn.disabled = false;
         var label = saveBtn.querySelector(".btn__label");
         if (res.error) {
           alert("Не удалось сохранить: " + res.error.message);
-        } else if (label) {
-          var original = label.textContent;
-          label.textContent = "Сохранено";
-          setTimeout(function () { label.textContent = original; }, 1200);
+        } else {
+          if (label) {
+            var original = label.textContent;
+            label.textContent = "Сохранено";
+            setTimeout(function () { label.textContent = original; }, 1200);
+          }
+          if (file) loadProducts();
         }
+      }).catch(function (err) {
+        saveBtn.disabled = false;
+        alert("Не удалось загрузить фото: " + err.message);
       });
       return;
     }
@@ -189,16 +218,29 @@
     var price = Number(addForm.querySelector('[name="price"]').value) || 0;
     var oldPriceRaw = addForm.querySelector('[name="old_price"]').value;
     var oldPrice = oldPriceRaw === "" ? null : Number(oldPriceRaw);
+    var description = addForm.querySelector('[name="description"]').value.trim() || null;
+    var imageFile = addForm.querySelector('[name="image"]').files[0];
 
     if (!id || !name || !price) {
       alert("Заполните артикул (id), название и цену.");
       return;
     }
 
-    supa.from("products").insert({ id: id, name: name, cat: cat, price: price, old_price: oldPrice, in_stock: true }).then(function (res) {
+    var submitBtn = addForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    uploadProductImage(id, imageFile).then(function (imageUrl) {
+      return supa.from("products").insert({
+        id: id, name: name, cat: cat, price: price, old_price: oldPrice,
+        description: description, image_url: imageUrl, in_stock: true
+      });
+    }).then(function (res) {
+      submitBtn.disabled = false;
       if (res.error) { alert("Не удалось добавить: " + res.error.message); return; }
       addForm.reset();
       loadProducts();
+    }).catch(function (err) {
+      submitBtn.disabled = false;
+      alert("Не удалось загрузить фото: " + err.message);
     });
   });
 

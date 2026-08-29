@@ -590,6 +590,7 @@ p {
 }
 
 .hero__cascade-card svg { width: 30%; height: auto; color: var(--ink-55); }
+.hero__cascade-card__thumb { width: 48%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: calc(var(--r-card) - 6px); }
 .hero__cascade-card__name { font-size: 11px; line-height: 1.25; color: var(--ink-70); }
 .hero__cascade-card__price { font-size: 13px; color: var(--ink); }
 
@@ -1738,6 +1739,14 @@ p {
   color: var(--ink-55);
 }
 .product-detail__frame svg { width: 26%; height: 26%; }
+.product-detail__frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
 
 .product-detail__cat { font-size: 13px; color: var(--ink-55); }
 .product-detail__cat a { color: inherit; transition: color 320ms var(--ease); }
@@ -1763,6 +1772,14 @@ p {
   color: var(--ink-70);
 }
 .product-detail__note a { color: var(--accent); }
+
+.product-detail__desc {
+  margin-top: var(--sp-4);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-70);
+  white-space: pre-line;
+}
 
 .product-not-found { padding: var(--sp-7) 0 var(--sp-8); text-align: center; }
 .product-not-found p { margin: 0 auto var(--sp-3); max-width: 46ch; }

@@ -339,7 +339,9 @@ function loadProducts() {
           price: Number(row.price),
           oldPrice: row.old_price === null || row.old_price === undefined ? null : Number(row.old_price),
           cat: row.cat,
-          inStock: row.in_stock !== false
+          inStock: row.in_stock !== false,
+          image: row.image_url || null,
+          description: row.description || null
         };
       });
     })
@@ -390,10 +392,13 @@ function productCardHTML(p, delay) {
   var old = p.oldPrice ? '<span class="old">' + p.oldPrice + '&nbsp;Br.</span>' : "";
   var inStock = p.inStock !== false;
   var stockBadge = inStock ? "" : '<span class="stock-badge stock-pill stock-pill--out">Нет в наличии</span>';
+  var frame = p.image
+    ? '<div class="product-card__frame"><img src="' + p.image + '" alt="" loading="lazy" data-lazy>' + stockBadge + '</div>'
+    : '<div class="product-card__frame product-card__frame--empty">' + PLACEHOLDER_ICON + stockBadge + '</div>';
   return (
     '<article class="product-card rise" style="--d:' + delay + 'ms">' +
       '<a class="product-card__link" href="product.html?id=' + encodeURIComponent(p.id) + '">' +
-        '<div class="product-card__frame product-card__frame--empty">' + PLACEHOLDER_ICON + stockBadge + '</div>' +
+        frame +
         '<p class="product-card__name">' + p.name + '</p>' +
       '</a>' +
       wishlistButtonHTML(p.id) +
@@ -425,9 +430,8 @@ function breadcrumbsHTML(parts) {
   );
 }
 
-// Wired for when real product photography comes back: give an <img>'s frame
-// the shimmer class, call this once, and it clears itself on load/error.
-// Nothing calls it yet because no card renders a real <img> today.
+// Gives a product photo's frame the shimmer class the moment it's inserted,
+// and clears it once the image has actually loaded (or failed).
 function bindLazyImage(img) {
   if (!img) return;
   var frame = img.closest(".product-card__frame, .product-detail__frame");
@@ -438,6 +442,13 @@ function bindLazyImage(img) {
   img.addEventListener("error", clear, { once: true });
 }
 window.LEXSTORE_BIND_LAZY_IMAGE = bindLazyImage;
+
+// call once right after dropping freshly-rendered product cards into a grid
+function bindLazyImagesIn(container) {
+  if (!container) return;
+  var imgs = container.querySelectorAll("img[data-lazy]");
+  for (var i = 0; i < imgs.length; i++) bindLazyImage(imgs[i]);
+}
 
 /* ---------- everything below needs LEXSTORE_PRODUCTS, so it only runs
    once loadProducts() resolves (see the bottom of this file) ---------- */
@@ -495,6 +506,7 @@ function catalogPageModule() {
     grid.innerHTML = slice.length
       ? slice.map(function (p, i) { return productCardHTML(p, Math.min(i, 8) * 50); }).join("")
       : '<p class="empty-state">' + (emptyMessage || "В этой категории пока пусто.") + '</p>';
+    bindLazyImagesIn(grid);
     if (loadMoreWrap) loadMoreWrap.hidden = state.visible >= state.fullList.length;
     paintBreadcrumbs();
     if (window.LEXSTORE_WISHLIST) window.LEXSTORE_WISHLIST.paint();
@@ -587,9 +599,12 @@ function heroCascadeModule() {
   stage.innerHTML = picks.map(function (id, i) {
     var p = byId[id];
     if (!p) return "";
+    var visual = p.image
+      ? '<img class="hero__cascade-card__thumb" src="' + p.image + '" alt="" loading="lazy" data-lazy>'
+      : PLACEHOLDER_ICON;
     return (
       '<div class="hero__cascade-card rise" style="--d:' + (1040 + i * 90) + 'ms">' +
-        PLACEHOLDER_ICON +
+        visual +
         '<span class="hero__cascade-card__name">' + p.name + '</span>' +
         '<span class="hero__cascade-card__price">' + p.price + '&nbsp;Br.</span>' +
       '</div>'
@@ -634,6 +649,7 @@ function homeHitsModule() {
   var picks = ids.map(function (id) { return byId[id]; }).filter(Boolean);
 
   grid.innerHTML = picks.map(function (p, i) { return productCardHTML(p, Math.min(i, 8) * 50); }).join("");
+  bindLazyImagesIn(grid);
   if (window.LEXSTORE_WISHLIST) window.LEXSTORE_WISHLIST.paint();
 }
 
@@ -665,12 +681,13 @@ function productPageModule() {
   var inStock = p.inStock !== false;
 
   document.title = p.name + " — Lexstore";
+  var metaDescText = p.description ? p.description.slice(0, 160) : (p.name + " — купить в Lexstore за " + p.price + " Br.");
   var descMeta = document.querySelector('meta[name="description"]');
-  if (descMeta) descMeta.setAttribute("content", p.name + " — купить в Lexstore за " + p.price + " Br.");
+  if (descMeta) descMeta.setAttribute("content", metaDescText);
   var ogTitle = document.querySelector('meta[property="og:title"]');
   if (ogTitle) ogTitle.setAttribute("content", p.name + " — Lexstore");
   var ogDesc = document.querySelector('meta[property="og:description"]');
-  if (ogDesc) ogDesc.setAttribute("content", p.name + " — купить в Lexstore за " + p.price + " Br.");
+  if (ogDesc) ogDesc.setAttribute("content", metaDescText);
 
   var bc = document.querySelector("[data-breadcrumbs]");
   if (bc) {
@@ -683,7 +700,27 @@ function productPageModule() {
   }
 
   var frame = root.querySelector("[data-product-frame]");
-  if (frame) frame.innerHTML = PLACEHOLDER_ICON;
+  if (frame) {
+    if (p.image) {
+      frame.innerHTML = '<img src="' + p.image + '" alt="' + p.name + '" data-lazy>';
+      bindLazyImage(frame.querySelector("img"));
+    } else {
+      frame.innerHTML = PLACEHOLDER_ICON;
+    }
+  }
+
+  var descEl = root.querySelector("[data-product-description]");
+  var noteEl = root.querySelector("[data-product-note]");
+  if (descEl && noteEl) {
+    if (p.description) {
+      descEl.textContent = p.description;
+      descEl.hidden = false;
+      noteEl.hidden = true;
+    } else {
+      descEl.hidden = true;
+      noteEl.hidden = false;
+    }
+  }
 
   var nameEl = root.querySelector("[data-product-name]");
   if (nameEl) nameEl.textContent = p.name;
@@ -728,6 +765,7 @@ function productPageModule() {
   if (relatedGrid) {
     if (related.length) {
       relatedGrid.innerHTML = related.map(function (x, i) { return productCardHTML(x, i * 60); }).join("");
+      bindLazyImagesIn(relatedGrid);
       if (relatedSection) relatedSection.hidden = false;
     } else if (relatedSection) {
       relatedSection.hidden = true;
@@ -1066,6 +1104,7 @@ function wishlistPageModule() {
     grid.hidden = false;
     if (emptyEl) emptyEl.hidden = true;
     grid.innerHTML = list.map(function (p, i) { return productCardHTML(p, i * 60); }).join("");
+    bindLazyImagesIn(grid);
     window.LEXSTORE_WISHLIST.paint();
   }
 

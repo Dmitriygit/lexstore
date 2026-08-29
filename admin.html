@@ -62,6 +62,11 @@
         <select name="cat"></select>
         <input type="number" name="price" placeholder="Цена" min="0" required>
         <input type="number" name="old_price" placeholder="Старая цена (необязательно)" min="0">
+        <label class="admin-file-field">
+          <span>Фото товара</span>
+          <input type="file" name="image" accept="image/*">
+        </label>
+        <textarea name="description" placeholder="Описание товара (необязательно)" rows="3"></textarea>
         <button class="btn btn--solid" type="submit">
           <span class="btn__fill"></span>
           <span class="btn__label">Добавить</span>
@@ -75,10 +80,12 @@
           <thead>
             <tr>
               <th>ID</th>
+              <th>Фото</th>
               <th>Название</th>
               <th>Категория</th>
               <th>Цена</th>
               <th>Старая цена</th>
+              <th>Описание</th>
               <th>В наличии</th>
               <th></th>
             </tr>
