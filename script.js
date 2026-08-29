@@ -333,6 +333,10 @@ function loadProducts() {
         return LEXSTORE_FALLBACK_PRODUCTS.slice();
       }
       return res.data.map(function (row) {
+        // `images` (array, several photos) is the current column; `image_url`
+        // (single photo) is the older one, kept as a fallback for any row
+        // that hasn't been migrated to the array yet.
+        var images = Array.isArray(row.images) && row.images.length ? row.images : (row.image_url ? [row.image_url] : []);
         return {
           id: row.id,
           name: row.name,
@@ -340,7 +344,8 @@ function loadProducts() {
           oldPrice: row.old_price === null || row.old_price === undefined ? null : Number(row.old_price),
           cat: row.cat,
           inStock: row.in_stock !== false,
-          image: row.image_url || null,
+          image: images[0] || null,
+          images: images,
           description: row.description || null
         };
       });
@@ -700,13 +705,40 @@ function productPageModule() {
   }
 
   var frame = root.querySelector("[data-product-frame]");
-  if (frame) {
-    if (p.image) {
-      frame.innerHTML = '<img src="' + p.image + '" alt="' + p.name + '" data-lazy>';
+  function setMainImage(url) {
+    if (!frame) return;
+    if (url) {
+      frame.innerHTML = '<img src="' + url + '" alt="' + p.name + '" data-lazy>';
       bindLazyImage(frame.querySelector("img"));
     } else {
       frame.innerHTML = PLACEHOLDER_ICON;
     }
+  }
+  var images = Array.isArray(p.images) ? p.images : [];
+  setMainImage(images[0] || null);
+
+  var galleryEl = root.querySelector("[data-product-gallery]");
+  if (galleryEl) {
+    if (images.length > 1) {
+      galleryEl.innerHTML = images.map(function (url, i) {
+        return (
+          '<button type="button" class="product-detail__gallery-thumb' + (i === 0 ? " is-active" : "") + '" data-gallery-thumb data-url="' + url + '">' +
+            '<img src="' + url + '" alt="" loading="lazy">' +
+          '</button>'
+        );
+      }).join("");
+      galleryEl.hidden = false;
+    } else {
+      galleryEl.innerHTML = "";
+      galleryEl.hidden = true;
+    }
+    galleryEl.addEventListener("click", function (e) {
+      var thumb = e.target.closest("[data-gallery-thumb]");
+      if (!thumb) return;
+      galleryEl.querySelectorAll("[data-gallery-thumb]").forEach(function (b) { b.classList.remove("is-active"); });
+      thumb.classList.add("is-active");
+      setMainImage(thumb.getAttribute("data-url"));
+    });
   }
 
   var descEl = root.querySelector("[data-product-description]");

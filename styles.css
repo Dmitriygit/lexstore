@@ -1748,6 +1748,23 @@ p {
   border-radius: inherit;
 }
 
+.product-detail__gallery { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-top: var(--sp-2); }
+.product-detail__gallery-thumb {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg-soft);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: box-shadow 220ms var(--ease);
+}
+.product-detail__gallery-thumb:hover { box-shadow: inset 0 0 0 1px var(--ink-55); }
+.product-detail__gallery-thumb.is-active { box-shadow: inset 0 0 0 2px var(--accent); }
+.product-detail__gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
 .product-detail__cat { font-size: 13px; color: var(--ink-55); }
 .product-detail__cat a { color: inherit; transition: color 320ms var(--ease); }
 .product-detail__cat a:hover { color: var(--ink); }

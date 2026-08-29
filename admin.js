@@ -64,6 +64,12 @@
     });
   }
 
+  // Uploads several files (a product's photo set) in parallel and resolves
+  // with their public URLs, in the same order the files were given.
+  function uploadProductImages(id, files) {
+    return Promise.all(files.map(function (f) { return uploadProductImage(id, f); }));
+  }
+
   // Best-effort: pulls the storage path back out of a public URL so the old
   // file can be deleted from the bucket when a photo is removed/replaced.
   function storagePathFromUrl(url) {
@@ -134,17 +140,29 @@
   var addCatSelect = addForm.querySelector('[name="cat"]');
   if (addCatSelect) addCatSelect.innerHTML = categoryOptionsHTML();
 
+  // A product's photo set: prefers the new `images` array column, falls
+  // back to the older single `image_url` column for rows not migrated yet.
+  function productImages(p) {
+    if (Array.isArray(p.images) && p.images.length) return p.images;
+    return p.image_url ? [p.image_url] : [];
+  }
+
   function productRowHTML(p) {
-    var thumb = p.image_url
-      ? '<img class="admin-thumb" src="' + esc(p.image_url) + '" alt="">'
+    var images = productImages(p);
+    var thumbList = images.length
+      ? images.map(function (url) {
+          return (
+            '<span class="admin-thumb-item">' +
+              '<img class="admin-thumb" src="' + esc(url) + '" alt="">' +
+              '<button type="button" class="admin-thumb-remove" data-remove-image data-url="' + esc(url) + '" title="Удалить это фото">×</button>' +
+            '</span>'
+          );
+        }).join("")
       : '<span class="admin-thumb admin-thumb--empty">нет фото</span>';
-    var removeBtn = p.image_url
-      ? '<button type="button" class="admin-btn-sm admin-btn-danger" data-remove-image>Удалить фото</button>'
-      : "";
     return (
       '<tr data-product-row data-id="' + esc(p.id) + '">' +
         '<td class="admin-table__id">' + esc(p.id) + '</td>' +
-        '<td><div class="admin-thumb-cell">' + thumb + removeBtn + '<input type="file" accept="image/*" data-field="image-file"></div></td>' +
+        '<td><div class="admin-thumb-cell"><div class="admin-thumb-list">' + thumbList + '</div><input type="file" accept="image/*" multiple data-field="image-files" title="Добавить ещё фото"></div></td>' +
         '<td><input type="text" data-field="name" value="' + esc(p.name) + '"></td>' +
         '<td><select data-field="cat">' + categoryOptionsHTML(p.cat) + '</select></td>' +
         '<td><input type="number" data-field="price" value="' + p.price + '" min="0" step="1"></td>' +
@@ -178,15 +196,21 @@
 
     var removeImageBtn = e.target.closest("[data-remove-image]");
     if (removeImageBtn) {
-      if (!confirm('Удалить фото товара "' + id + '"? Он вернётся к заглушке-иконке.')) return;
-      var oldUrl = row.querySelector(".admin-thumb");
-      oldUrl = oldUrl && oldUrl.tagName === "IMG" ? oldUrl.getAttribute("src") : null;
+      var urlToRemove = removeImageBtn.getAttribute("data-url");
+      if (!confirm("Удалить это фото товара?")) return;
       removeImageBtn.disabled = true;
-      supa.from("products").update({ image_url: null }).eq("id", id).then(function (res) {
-        if (res.error) { removeImageBtn.disabled = false; alert("Не удалось удалить фото: " + res.error.message); return; }
-        var path = oldUrl ? storagePathFromUrl(oldUrl) : null;
+      supa.from("products").select("images,image_url").eq("id", id).then(function (res) {
+        if (res.error || !res.data[0]) throw (res.error || new Error("Товар не найден"));
+        var updated = productImages(res.data[0]).filter(function (u) { return u !== urlToRemove; });
+        return supa.from("products").update({ images: updated, image_url: null }).eq("id", id);
+      }).then(function (res) {
+        if (res.error) throw res.error;
+        var path = storagePathFromUrl(urlToRemove);
         if (path) supa.storage.from("product-images").remove([path]);
         loadProducts();
+      }).catch(function (err) {
+        removeImageBtn.disabled = false;
+        alert("Не удалось удалить фото: " + err.message);
       });
       return;
     }
@@ -201,28 +225,17 @@
         description: row.querySelector('[data-field="description"]').value.trim() || null,
         in_stock: row.querySelector('[data-field="in_stock"]').checked
       };
-      var fileInput = row.querySelector('[data-field="image-file"]');
-      var file = fileInput && fileInput.files[0];
       saveBtn.disabled = true;
-      (file ? uploadProductImage(id, file) : Promise.resolve(null)).then(function (imageUrl) {
-        if (imageUrl) patch.image_url = imageUrl;
-        return supa.from("products").update(patch).eq("id", id);
-      }).then(function (res) {
+      supa.from("products").update(patch).eq("id", id).then(function (res) {
         saveBtn.disabled = false;
         var label = saveBtn.querySelector(".btn__label");
         if (res.error) {
           alert("Не удалось сохранить: " + res.error.message);
-        } else {
-          if (label) {
-            var original = label.textContent;
-            label.textContent = "Сохранено";
-            setTimeout(function () { label.textContent = original; }, 1200);
-          }
-          if (file) loadProducts();
+        } else if (label) {
+          var original = label.textContent;
+          label.textContent = "Сохранено";
+          setTimeout(function () { label.textContent = original; }, 1200);
         }
-      }).catch(function (err) {
-        saveBtn.disabled = false;
-        alert("Не удалось загрузить фото: " + err.message);
       });
       return;
     }
@@ -236,6 +249,31 @@
     }
   });
 
+  // Selecting files in a row's "add photo" input uploads and appends them
+  // to that product's photo set right away — no separate save step needed.
+  productsBody.addEventListener("change", function (e) {
+    var input = e.target.closest('[data-field="image-files"]');
+    if (!input) return;
+    var row = input.closest("[data-product-row]");
+    var id = row.getAttribute("data-id");
+    var files = Array.prototype.slice.call(input.files || []);
+    if (!files.length) return;
+    input.disabled = true;
+    uploadProductImages(id, files).then(function (urls) {
+      return supa.from("products").select("images,image_url").eq("id", id).then(function (res) {
+        if (res.error || !res.data[0]) throw (res.error || new Error("Товар не найден"));
+        var updated = productImages(res.data[0]).concat(urls);
+        return supa.from("products").update({ images: updated }).eq("id", id);
+      });
+    }).then(function (res) {
+      if (res.error) throw res.error;
+      loadProducts();
+    }).catch(function (err) {
+      input.disabled = false;
+      alert("Не удалось загрузить фото: " + err.message);
+    });
+  });
+
   addForm.addEventListener("submit", function (e) {
     e.preventDefault();
     var id = addForm.querySelector('[name="id"]').value.trim();
@@ -245,7 +283,7 @@
     var oldPriceRaw = addForm.querySelector('[name="old_price"]').value;
     var oldPrice = oldPriceRaw === "" ? null : Number(oldPriceRaw);
     var description = addForm.querySelector('[name="description"]').value.trim() || null;
-    var imageFile = addForm.querySelector('[name="image"]').files[0];
+    var imageFiles = Array.prototype.slice.call(addForm.querySelector('[name="images"]').files || []);
 
     if (!id || !name || !price) {
       alert("Заполните артикул (id), название и цену.");
@@ -254,10 +292,10 @@
 
     var submitBtn = addForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
-    uploadProductImage(id, imageFile).then(function (imageUrl) {
+    uploadProductImages(id, imageFiles).then(function (imageUrls) {
       return supa.from("products").insert({
         id: id, name: name, cat: cat, price: price, old_price: oldPrice,
-        description: description, image_url: imageUrl, in_stock: true
+        description: description, images: imageUrls, in_stock: true
       });
     }).then(function (res) {
       submitBtn.disabled = false;
