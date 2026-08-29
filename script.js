@@ -439,7 +439,7 @@ function breadcrumbsHTML(parts) {
 // and clears it once the image has actually loaded (or failed).
 function bindLazyImage(img) {
   if (!img) return;
-  var frame = img.closest(".product-card__frame, .product-detail__frame");
+  var frame = img.closest(".product-card__frame, .product-detail__frame, .cart-row__thumb");
   if (frame) frame.classList.add("img-skeleton");
   function clear() { if (frame) frame.classList.remove("img-skeleton"); }
   if (img.complete && img.naturalWidth) { clear(); return; }
@@ -849,9 +849,12 @@ function cartPageModule() {
     var p = byId[item.id];
     if (!p) return "";
     var lineTotal = p.price * item.qty;
+    var thumb = p.image
+      ? '<img src="' + p.image + '" alt="" loading="lazy" data-lazy>'
+      : PLACEHOLDER_ICON;
     return (
       '<div class="cart-row" data-cart-row data-id="' + p.id + '">' +
-        '<a class="cart-row__thumb" href="product.html?id=' + p.id + '">' + PLACEHOLDER_ICON + '</a>' +
+        '<a class="cart-row__thumb" href="product.html?id=' + p.id + '">' + thumb + '</a>' +
         '<div class="cart-row__info">' +
           '<a class="cart-row__name" href="product.html?id=' + p.id + '">' + p.name + '</a>' +
           '<span class="cart-row__unit">' + p.price + '&nbsp;Br. / шт.</span>' +
@@ -882,6 +885,7 @@ function cartPageModule() {
     listEl.hidden = false;
     if (emptyEl) emptyEl.hidden = true;
     listEl.innerHTML = items.map(rowHTML).join("");
+    bindLazyImagesIn(listEl);
 
     var subtotal = items.reduce(function (sum, it) { var p = byId[it.id]; return sum + (p ? p.price * it.qty : 0); }, 0);
     var qtyCount = items.reduce(function (sum, it) { return sum + it.qty; }, 0);

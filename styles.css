@@ -351,7 +351,8 @@ p {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 84px 0 var(--sp-3);
+  padding-top: 84px;
+  padding-bottom: var(--sp-3);
 }
 
 .search-panel__inner svg { width: 18px; height: 18px; color: var(--ink-55); flex: none; }
@@ -829,7 +830,8 @@ p {
 
 .site-footer nav {
   display: flex;
-  gap: var(--sp-3);
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
 }
 
 .site-footer nav a { font-size: 14px; color: var(--ink-55); transition: color 320ms var(--ease); }
@@ -907,7 +909,8 @@ p {
    Catalog page
    ============================================================ */
 .catalog-head {
-  padding: 160px 0 var(--sp-4);
+  padding-top: 160px;
+  padding-bottom: var(--sp-4);
 }
 
 .catalog-head h1 {
@@ -1084,7 +1087,8 @@ p {
    Content pages — О нас / Отзывы
    ============================================================ */
 .page-head {
-  padding: 160px 0 var(--sp-4);
+  padding-top: 160px;
+  padding-bottom: var(--sp-4);
 }
 
 .page-head h1 {
@@ -1102,7 +1106,8 @@ p {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--sp-3);
-  padding: var(--sp-5) 0 var(--sp-7);
+  padding-top: var(--sp-5);
+  padding-bottom: var(--sp-7);
 }
 
 .about-point {
@@ -1122,7 +1127,8 @@ p {
 .about-point h3 { margin-bottom: var(--sp-1); font-weight: 400; }
 
 .about-cta {
-  padding: var(--sp-7) 0 var(--sp-8);
+  padding-top: var(--sp-7);
+  padding-bottom: var(--sp-8);
 }
 
 .about-cta__inner {
@@ -1143,7 +1149,7 @@ p {
 
 /* contacts — real registration details, live on every page via the footer
    too; this is just the fuller, easier-to-read version */
-.contacts { padding: var(--sp-6) 0 var(--sp-7); }
+.contacts { padding-top: var(--sp-6); padding-bottom: var(--sp-7); }
 .contacts h2 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); margin: var(--sp-1) 0 var(--sp-4); }
 
 .contacts-grid {
@@ -1213,7 +1219,8 @@ p {
   grid-template-columns: 1.1fr .9fr;
   gap: var(--sp-5);
   align-items: center;
-  padding: var(--sp-4) 0 var(--sp-8);
+  padding-top: var(--sp-4);
+  padding-bottom: var(--sp-8);
 }
 
 .reviews-empty__inner {
@@ -1258,88 +1265,6 @@ p {
   display: block;
   font-size: 13px;
   color: var(--ink-55);
-}
-
-/* ============================================================
-   Responsive
-   ============================================================ */
-@media (max-width: 900px) {
-  .site-nav { gap: var(--sp-2); }
-  .site-actions__phone span { display: none; }
-  .site-actions { gap: var(--sp-1); }
-  .cat-grid { grid-template-columns: repeat(2, 1fr); }
-  .product-grid { grid-template-columns: repeat(2, 1fr); }
-  .hero__stage { width: clamp(115px, 18vw, 150px); }
-  .about-points { grid-template-columns: 1fr; }
-  .why-us__row { flex-direction: column; align-items: flex-start; }
-  .home-reviews__row { grid-template-columns: 1fr; }
-  .reviews-empty { grid-template-columns: 1fr; }
-  .site-footer__contacts { grid-template-columns: 1fr 1fr; }
-  .contacts-grid { grid-template-columns: 1fr 1fr; }
-  .cart-grid,
-  .checkout-grid { grid-template-columns: 1fr; }
-  .cart-summary,
-  .checkout-summary { position: static; }
-  .product-detail__grid { grid-template-columns: 1fr; }
-  .related-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 560px) {
-  .site-footer__contacts { grid-template-columns: 1fr; }
-  .contacts-grid { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 560px) {
-  .site-nav { display: none; }
-  .menu-toggle { display: flex; }
-  .site-actions__phone { display: none; }
-  .site-actions > .btn { display: none; }
-  .cat-grid { grid-template-columns: 1fr; }
-  .hero__meta { flex-direction: column; align-items: flex-start; margin-top: var(--sp-4); }
-  .hero { padding: 96px 0 var(--sp-5); }
-  /* the cascade used to overlap the headline via absolute positioning —
-     fragile at narrow widths no matter how the transform was tuned. In
-     flow it can never sit on top of text again, full stop. */
-  .hero__stage {
-    position: relative;
-    top: auto;
-    left: auto;
-    transform: none;
-    width: clamp(150px, 46vw, 210px);
-    margin: 4px auto 0;
-  }
-  .hero__headings { gap: clamp(20px, 4vh, 32px); }
-  .hits-grid { grid-template-columns: 1fr; }
-  .related-grid { grid-template-columns: 1fr; }
-  /* the sticky chip bar used to wrap onto 4-5 rows here and, being
-     sticky, pin that much of the screen for the whole scroll — one
-     slim scrollable row fixes it regardless of how many categories exist */
-  .filters__row {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-    /* fades the last visible chip instead of cutting it off mid-word, so
-       the row reads as "scroll for more" rather than looking clipped */
-    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
-  }
-  .filters__row::-webkit-scrollbar { display: none; }
-  .filters__row .chip { flex: none; }
-  .catalog-toolbar { justify-content: flex-start; }
-  .sort-field select { width: 100%; }
-
-  /* centered eyebrow + heading reads calmer on a narrow column than
-     text that starts flush left and trails off short of the right edge */
-  .catalog-head,
-  .page-head { text-align: center; }
-  .catalog-head [data-breadcrumbs] .breadcrumbs ol,
-  .page-head .breadcrumbs ol { justify-content: center; }
-  .page-head__lead { margin-left: auto; margin-right: auto; text-align: left; }
-}
-
-@media (max-width: 480px) {
-  .cart-row__thumb { display: none; }
 }
 
 /* ============================================================
@@ -1404,7 +1329,7 @@ p {
 .breadcrumbs span[aria-current] { color: var(--ink-70); }
 .breadcrumbs__sep { color: var(--line); }
 
-.crumbs-wrap { padding: 148px 0 0; }
+.crumbs-wrap { padding-top: 148px; }
 
 /* ============================================================
    Catalog — sort field + "show more" pagination
@@ -1454,7 +1379,7 @@ p {
 /* ============================================================
    Cart page
    ============================================================ */
-.cart-page { padding: var(--sp-3) 0 var(--sp-8); }
+.cart-page { padding-top: var(--sp-3); padding-bottom: var(--sp-8); }
 
 .cart-grid {
   display: grid;
@@ -1484,6 +1409,7 @@ p {
   height: 64px;
   flex: none;
   border-radius: 14px;
+  overflow: hidden;
   background: var(--bg-soft-2);
   display: flex;
   align-items: center;
@@ -1491,6 +1417,7 @@ p {
   color: var(--ink-55);
 }
 .cart-row__thumb svg { width: 40%; height: 40%; }
+.cart-row__thumb img { width: 100%; height: 100%; object-fit: cover; }
 
 .cart-row__info {
   flex: 1 1 180px;
@@ -1631,7 +1558,7 @@ p {
 /* ============================================================
    Checkout page
    ============================================================ */
-.checkout-page { padding: var(--sp-3) 0 var(--sp-8); }
+.checkout-page { padding-top: var(--sp-3); padding-bottom: var(--sp-8); }
 
 .checkout-grid {
   display: grid;
@@ -1735,7 +1662,7 @@ p {
 /* ============================================================
    Product detail page
    ============================================================ */
-.product-detail { padding: 0 0 var(--sp-2); }
+.product-detail { padding-bottom: var(--sp-2); }
 
 .product-detail__grid {
   display: grid;
@@ -1814,17 +1741,17 @@ p {
   white-space: pre-line;
 }
 
-.product-not-found { padding: var(--sp-7) 0 var(--sp-8); text-align: center; }
+.product-not-found { padding-top: var(--sp-7); padding-bottom: var(--sp-8); text-align: center; }
 .product-not-found p { margin: 0 auto var(--sp-3); max-width: 46ch; }
 
-.related { padding: var(--sp-6) 0 var(--sp-7); border-top: 1px solid var(--line); }
+.related { padding-top: var(--sp-6); padding-bottom: var(--sp-7); border-top: 1px solid var(--line); }
 .related h2 { font-size: clamp(1.6rem, 2.8vw, 2.2rem); margin-bottom: var(--sp-3); font-weight: 300; }
 .related-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3) var(--sp-2); }
 
 /* ============================================================
    404 page
    ============================================================ */
-.error-page { padding: 180px 0 var(--sp-8); text-align: center; }
+.error-page { padding-top: 180px; padding-bottom: var(--sp-8); text-align: center; }
 .error-page__code {
   display: block;
   font-family: var(--font-display);
@@ -1837,3 +1764,89 @@ p {
 .error-page h1 { margin: var(--sp-2) 0 var(--sp-2); }
 .error-page p { margin: 0 auto var(--sp-4); max-width: 46ch; }
 .error-page__actions { display: flex; justify-content: center; gap: var(--sp-2); flex-wrap: wrap; }
+
+/* ============================================================
+   Responsive
+   — kept last on purpose: a breakpoint override here needs to beat every
+   unconditional rule above it, and in plain CSS "later in the file" is
+   what wins a specificity tie. Anything added above this point that also
+   needs a mobile override belongs in here, not next to its base rule.
+   ============================================================ */
+@media (max-width: 900px) {
+  .site-nav { gap: var(--sp-2); }
+  .site-actions__phone span { display: none; }
+  .site-actions { gap: var(--sp-1); }
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .product-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero__stage { width: clamp(115px, 18vw, 150px); }
+  .about-points { grid-template-columns: 1fr; }
+  .why-us__row { flex-direction: column; align-items: flex-start; }
+  .home-reviews__row { grid-template-columns: 1fr; }
+  .reviews-empty { grid-template-columns: 1fr; }
+  .site-footer__contacts { grid-template-columns: 1fr 1fr; }
+  .contacts-grid { grid-template-columns: 1fr 1fr; }
+  .cart-grid,
+  .checkout-grid { grid-template-columns: 1fr; }
+  .cart-summary,
+  .checkout-summary { position: static; }
+  .product-detail__grid { grid-template-columns: 1fr; }
+  .related-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .site-footer__contacts { grid-template-columns: 1fr; }
+  .contacts-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .site-nav { display: none; }
+  .menu-toggle { display: flex; }
+  .site-actions__phone { display: none; }
+  .site-actions > .btn { display: none; }
+  .cat-grid { grid-template-columns: 1fr; }
+  .hero__meta { flex-direction: column; align-items: flex-start; margin-top: var(--sp-4); }
+  .hero { padding: 96px 0 var(--sp-5); }
+  /* the cascade used to overlap the headline via absolute positioning —
+     fragile at narrow widths no matter how the transform was tuned. In
+     flow it can never sit on top of text again, full stop. */
+  .hero__stage {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    width: clamp(150px, 46vw, 210px);
+    margin: 4px auto 0;
+  }
+  .hero__headings { gap: clamp(20px, 4vh, 32px); }
+  .hits-grid { grid-template-columns: 1fr; }
+  .related-grid { grid-template-columns: 1fr; }
+  /* the sticky chip bar used to wrap onto 4-5 rows here and, being
+     sticky, pin that much of the screen for the whole scroll — one
+     slim scrollable row fixes it regardless of how many categories exist */
+  .filters__row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    /* fades the last visible chip instead of cutting it off mid-word, so
+       the row reads as "scroll for more" rather than looking clipped */
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+  }
+  .filters__row::-webkit-scrollbar { display: none; }
+  .filters__row .chip { flex: none; }
+  .catalog-toolbar { justify-content: flex-start; }
+  .sort-field select { width: 100%; }
+
+  /* centered eyebrow + heading reads calmer on a narrow column than
+     text that starts flush left and trails off short of the right edge */
+  .catalog-head,
+  .page-head { text-align: center; }
+  .catalog-head [data-breadcrumbs] .breadcrumbs ol,
+  .page-head .breadcrumbs ol { justify-content: center; }
+  .page-head__lead { margin-left: auto; margin-right: auto; text-align: left; }
+}
+
+@media (max-width: 480px) {
+  .cart-row__thumb { display: none; }
+}
