@@ -150,10 +150,12 @@
   function productRowHTML(p) {
     var images = productImages(p);
     var thumbList = images.length
-      ? images.map(function (url) {
+      ? images.map(function (url, i) {
+          var isCover = i === 0;
           return (
             '<span class="admin-thumb-item">' +
               '<img class="admin-thumb" src="' + esc(url) + '" alt="">' +
+              '<button type="button" class="admin-thumb-cover' + (isCover ? " is-cover" : "") + '" data-set-cover data-url="' + esc(url) + '"' + (isCover ? " disabled" : "") + ' title="' + (isCover ? "Это фото видят покупатели в каталоге" : "Сделать главным (видят покупатели в каталоге)") + '">' + (isCover ? "★" : "☆") + '</button>' +
               '<button type="button" class="admin-thumb-remove" data-remove-image data-url="' + esc(url) + '" title="Удалить это фото">×</button>' +
             '</span>'
           );
@@ -193,6 +195,25 @@
     var row = e.target.closest("[data-product-row]");
     if (!row) return;
     var id = row.getAttribute("data-id");
+
+    var setCoverBtn = e.target.closest("[data-set-cover]");
+    if (setCoverBtn) {
+      var coverUrl = setCoverBtn.getAttribute("data-url");
+      setCoverBtn.disabled = true;
+      supa.from("products").select("images,image_url").eq("id", id).then(function (res) {
+        if (res.error || !res.data[0]) throw (res.error || new Error("Товар не найден"));
+        var current = productImages(res.data[0]);
+        var reordered = [coverUrl].concat(current.filter(function (u) { return u !== coverUrl; }));
+        return supa.from("products").update({ images: reordered }).eq("id", id);
+      }).then(function (res) {
+        if (res.error) throw res.error;
+        loadProducts();
+      }).catch(function (err) {
+        setCoverBtn.disabled = false;
+        alert("Не удалось сделать фото главным: " + err.message);
+      });
+      return;
+    }
 
     var removeImageBtn = e.target.closest("[data-remove-image]");
     if (removeImageBtn) {

@@ -203,6 +203,26 @@ body { padding-bottom: var(--sp-7); }
   transition: background 320ms var(--ease);
 }
 .admin-thumb-remove:hover { background: #ff8a80; }
+.admin-thumb-cover {
+  position: absolute;
+  bottom: -6px;
+  left: -6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-soft-2);
+  color: var(--ink-55);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: color 320ms var(--ease), background 320ms var(--ease);
+}
+.admin-thumb-cover:hover { color: var(--ink); }
+.admin-thumb-cover.is-cover { background: var(--accent); color: var(--bg); box-shadow: none; cursor: default; }
+.admin-thumb-list { padding: 6px; margin: -6px; }
 .admin-thumb-cell input[type="file"] { width: 140px; font-size: 11px; color: var(--ink-55); }
 
 .admin-btn-sm { padding: 0 14px; min-height: 32px; font-size: 12px; flex: none; }
