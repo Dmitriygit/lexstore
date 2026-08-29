@@ -64,6 +64,14 @@
     });
   }
 
+  // Best-effort: pulls the storage path back out of a public URL so the old
+  // file can be deleted from the bucket when a photo is removed/replaced.
+  function storagePathFromUrl(url) {
+    var marker = "/product-images/";
+    var i = url.indexOf(marker);
+    return i === -1 ? null : url.slice(i + marker.length);
+  }
+
   /* ---------- auth ---------- */
   function showApp() {
     loginSection.hidden = true;
@@ -130,10 +138,13 @@
     var thumb = p.image_url
       ? '<img class="admin-thumb" src="' + esc(p.image_url) + '" alt="">'
       : '<span class="admin-thumb admin-thumb--empty">нет фото</span>';
+    var removeBtn = p.image_url
+      ? '<button type="button" class="admin-btn-sm admin-btn-danger" data-remove-image>Удалить фото</button>'
+      : "";
     return (
       '<tr data-product-row data-id="' + esc(p.id) + '">' +
         '<td class="admin-table__id">' + esc(p.id) + '</td>' +
-        '<td><div class="admin-thumb-cell">' + thumb + '<input type="file" accept="image/*" data-field="image-file"></div></td>' +
+        '<td><div class="admin-thumb-cell">' + thumb + removeBtn + '<input type="file" accept="image/*" data-field="image-file"></div></td>' +
         '<td><input type="text" data-field="name" value="' + esc(p.name) + '"></td>' +
         '<td><select data-field="cat">' + categoryOptionsHTML(p.cat) + '</select></td>' +
         '<td><input type="number" data-field="price" value="' + p.price + '" min="0" step="1"></td>' +
@@ -164,6 +175,21 @@
     var row = e.target.closest("[data-product-row]");
     if (!row) return;
     var id = row.getAttribute("data-id");
+
+    var removeImageBtn = e.target.closest("[data-remove-image]");
+    if (removeImageBtn) {
+      if (!confirm('Удалить фото товара "' + id + '"? Он вернётся к заглушке-иконке.')) return;
+      var oldUrl = row.querySelector(".admin-thumb");
+      oldUrl = oldUrl && oldUrl.tagName === "IMG" ? oldUrl.getAttribute("src") : null;
+      removeImageBtn.disabled = true;
+      supa.from("products").update({ image_url: null }).eq("id", id).then(function (res) {
+        if (res.error) { removeImageBtn.disabled = false; alert("Не удалось удалить фото: " + res.error.message); return; }
+        var path = oldUrl ? storagePathFromUrl(oldUrl) : null;
+        if (path) supa.storage.from("product-images").remove([path]);
+        loadProducts();
+      });
+      return;
+    }
 
     var saveBtn = e.target.closest("[data-save-product]");
     if (saveBtn) {
