@@ -694,6 +694,32 @@ function productPageModule() {
   var ogDesc = document.querySelector('meta[property="og:description"]');
   if (ogDesc) ogDesc.setAttribute("content", metaDescText);
 
+  var pageUrl = "https://dmitriygit.github.io/lexstore/product.html?id=" + encodeURIComponent(p.id);
+  var ogUrl = document.querySelector('meta[property="og:url"]');
+  if (ogUrl) ogUrl.setAttribute("content", pageUrl);
+  var canonicalLink = document.querySelector('link[rel="canonical"]');
+  if (canonicalLink) canonicalLink.setAttribute("href", pageUrl);
+
+  var schemaEl = document.querySelector("[data-product-schema]");
+  if (schemaEl) {
+    var schemaImages = Array.isArray(p.images) ? p.images : [];
+    schemaEl.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: p.name,
+      image: schemaImages.length ? schemaImages : undefined,
+      description: p.description || metaDescText,
+      category: catInfo ? catInfo.name : undefined,
+      offers: {
+        "@type": "Offer",
+        url: pageUrl,
+        priceCurrency: "BYN",
+        price: p.price,
+        availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+      }
+    });
+  }
+
   var bc = document.querySelector("[data-breadcrumbs]");
   if (bc) {
     bc.innerHTML = breadcrumbsHTML([
@@ -987,6 +1013,13 @@ function checkoutPageModule() {
     if (err) err.textContent = message || "";
   }
 
+  function setConsentError(message) {
+    var consentLabel = form.querySelector(".form-consent");
+    var err = form.querySelector("[data-consent-error]");
+    if (consentLabel) consentLabel.classList.toggle("is-invalid", !!message);
+    if (err) err.textContent = message || "";
+  }
+
   function validate() {
     var ok = true;
     var name = form.querySelector('[name="name"]');
@@ -1002,10 +1035,24 @@ function checkoutPageModule() {
       var address = form.querySelector('[name="address"]');
       if (!address.value.trim()) { setError(address, "Укажите адрес доставки"); ok = false; } else setError(address, "");
     }
+
+    var consent = form.querySelector('[name="consent"]');
+    if (consent && !consent.checked) { setConsentError("Нужно согласие на обработку данных, чтобы оформить заказ"); ok = false; } else setConsentError("");
+
     return ok;
   }
 
-  function buildOrderText() {
+  // A short human-readable order number so a customer can reference it by
+  // phone — generated on the client, no round-trip to the database needed.
+  function generateOrderNumber() {
+    var d = new Date();
+    var pad = function (n) { return n < 10 ? "0" + n : String(n); };
+    var datePart = String(d.getFullYear()).slice(-2) + pad(d.getMonth() + 1) + pad(d.getDate());
+    var randomPart = Math.floor(100 + Math.random() * 900);
+    return "LX-" + datePart + "-" + randomPart;
+  }
+
+  function buildOrderText(orderNumber) {
     var name = form.querySelector('[name="name"]').value.trim();
     var phone = form.querySelector('[name="phone"]').value.trim();
     var delivery = form.querySelector('input[name="delivery"]:checked');
@@ -1014,7 +1061,7 @@ function checkoutPageModule() {
     var comment = form.querySelector('[name="comment"]');
 
     var lines = [];
-    lines.push("Заказ Lexstore");
+    lines.push("Заказ Lexstore № " + orderNumber);
     lines.push("Имя: " + name);
     lines.push("Телефон: " + phone);
     lines.push("Получение: " + (isDelivery ? "Доставка по Бресту — " + (address ? address.value.trim() : "") : "Самовывоз"));
@@ -1033,9 +1080,9 @@ function checkoutPageModule() {
     return lines.join("\n");
   }
 
-  function finishSubmit(text) {
+  function finishSubmit(text, orderNumber) {
     var mailto = "mailto:elb00304@g.bstu.by" +
-      "?subject=" + encodeURIComponent("Новый заказ — Lexstore") +
+      "?subject=" + encodeURIComponent("Новый заказ — Lexstore " + orderNumber) +
       "&body=" + encodeURIComponent(text);
     window.location.href = mailto;
 
@@ -1044,6 +1091,8 @@ function checkoutPageModule() {
       successEl.hidden = false;
       var box = successEl.querySelector("[data-order-text]");
       if (box) box.value = text;
+      var numberEl = successEl.querySelector("[data-order-number]");
+      if (numberEl) numberEl.textContent = "№ " + orderNumber;
     }
   }
 
@@ -1055,7 +1104,8 @@ function checkoutPageModule() {
       return;
     }
 
-    var text = buildOrderText();
+    var orderNumber = generateOrderNumber();
+    var text = buildOrderText(orderNumber);
     var name = form.querySelector('[name="name"]').value.trim();
     var phone = form.querySelector('[name="phone"]').value.trim();
     var delivery = form.querySelector('input[name="delivery"]:checked');
@@ -1069,6 +1119,7 @@ function checkoutPageModule() {
         return { id: it.id, name: p ? p.name : it.id, qty: it.qty, price: p ? p.price : 0 };
       });
       window.LEXSTORE_SUPABASE.from("orders").insert({
+        order_number: orderNumber,
         name: name,
         phone: phone,
         delivery_type: isDelivery ? "delivery" : "pickup",
@@ -1079,13 +1130,13 @@ function checkoutPageModule() {
         status: "new"
       }).then(function (res) {
         if (res.error) console.error("Order insert failed:", res.error.message);
-        finishSubmit(text);
+        finishSubmit(text, orderNumber);
       }).catch(function (err) {
         console.error("Order insert threw:", err);
-        finishSubmit(text);
+        finishSubmit(text, orderNumber);
       });
     } else {
-      finishSubmit(text);
+      finishSubmit(text, orderNumber);
     }
   });
 

@@ -343,6 +343,7 @@
     }).join("");
     return (
       '<tr data-order-row data-id="' + esc(o.id) + '">' +
+        '<td class="admin-table__id">' + (o.order_number ? esc(o.order_number) : "—") + '</td>' +
         '<td>' + dateStr + '</td>' +
         '<td>' + esc(o.name) + '<br><a href="tel:' + esc(o.phone) + '">' + esc(o.phone) + '</a></td>' +
         '<td>' + deliveryStr + '</td>' +

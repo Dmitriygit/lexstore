@@ -5,4 +5,4 @@ Disallow: /checkout.html
 Disallow: /404.html
 Disallow: /admin.html
 
-Sitemap: https://lexstore.by/sitemap.xml
+Sitemap: https://dmitriygit.github.io/lexstore/sitemap.xml
