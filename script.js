@@ -954,11 +954,12 @@ function cartPageModule() {
   render();
 }
 
-/* ---------- checkout.html: form validation + real order + mailto backup ----------
-   Submitting now inserts the order straight into the `orders` table (visible
-   in admin.html) and, either way, still opens a pre-filled email and shows
-   the raw order text — a mail client isn't always configured on the device,
-   and this keeps a paper trail even if the database write ever fails. */
+/* ---------- checkout.html: form validation + real order ----------
+   Submitting inserts the order straight into the `orders` table (visible in
+   admin.html). A database trigger there fires a Telegram notification to the
+   store automatically — no mail client involved, no redirect away from the
+   page. The success screen shows immediately with the order text available
+   to copy, in case the customer wants to read it out over the phone. */
 function checkoutPageModule() {
   var form = document.querySelector("[data-checkout-form]");
   if (!form) return;
@@ -1085,11 +1086,6 @@ function checkoutPageModule() {
   }
 
   function finishSubmit(text, orderNumber) {
-    var mailto = "mailto:elb00304@g.bstu.by" +
-      "?subject=" + encodeURIComponent("Новый заказ — Lexstore " + orderNumber) +
-      "&body=" + encodeURIComponent(text);
-    window.location.href = mailto;
-
     if (formWrap) formWrap.hidden = true;
     if (successEl) {
       successEl.hidden = false;
